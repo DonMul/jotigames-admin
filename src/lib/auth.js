@@ -28,3 +28,8 @@ export function hasSuperAdminRole(session) {
   const roles = Array.isArray(session?.roles) ? session.roles : []
   return roles.includes('ROLE_SUPER_ADMIN')
 }
+
+export function hasAdminRole(session) {
+  const roles = Array.isArray(session?.roles) ? session.roles : []
+  return roles.includes('ROLE_ADMIN') || roles.includes('ROLE_SUPER_ADMIN')
+}
