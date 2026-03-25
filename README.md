@@ -10,6 +10,11 @@ Standalone React app for Super Admin management.
 - Game mode availability management (`/api/game/game-types/availability`)
 - User overview (`/api/super-admin/users`)
 
+## Product Documentation
+
+- Canonical Super Admin panel docs: `docs/admin/super-admin-panel.md`
+- Central documentation index: `docs/README.md`
+
 ## Run
 
 ```bash
