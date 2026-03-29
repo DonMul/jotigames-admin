@@ -6,6 +6,7 @@ import GameModesPage from '@/pages/GameModesPage'
 import UsersPage from '@/pages/UsersPage'
 import UserCreatePage from '@/pages/UserCreatePage'
 import UserEditPage from '@/pages/UserEditPage'
+import SubscriptionsPage from '@/pages/SubscriptionsPage'
 
 function getPageMeta(pathname) {
   if (pathname.endsWith('/users/new')) {
@@ -22,6 +23,9 @@ function getPageMeta(pathname) {
   }
   if (pathname.endsWith('/game-modes')) {
     return { title: 'Game Modes', description: 'Control global game type availability' }
+  }
+  if (pathname.endsWith('/subscriptions')) {
+    return { title: 'Subscriptions', description: 'Manage subscription plans, revenue, and billing' }
   }
   return { title: 'Overview', description: 'Platform status and quick actions' }
 }
@@ -52,6 +56,7 @@ export default function DashboardLayout({ session, onLogout }) {
             <Route path="users" element={<UsersPage session={session} />} />
             <Route path="users/new" element={<UserCreatePage session={session} />} />
             <Route path="users/:userId/edit" element={<UserEditPage session={session} />} />
+            <Route path="subscriptions" element={<SubscriptionsPage session={session} />} />
           </Routes>
         </div>
       </main>

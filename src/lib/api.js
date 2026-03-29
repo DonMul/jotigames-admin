@@ -94,6 +94,76 @@ export const superAdminApi = {
   },
 }
 
+export const subscriptionApi = {
+  /** Plans */
+  listPlans(token) {
+    return apiRequest('/api/super-admin/subscription/plans', { token })
+  },
+  createPlan(token, body) {
+    return apiRequest('/api/super-admin/subscription/plans', { method: 'POST', token, body })
+  },
+  updatePlan(token, planId, body) {
+    return apiRequest(`/api/super-admin/subscription/plans/${planId}`, { method: 'PUT', token, body })
+  },
+  reorderPlans(token, planIds) {
+    return apiRequest('/api/super-admin/subscription/plans/reorder', { method: 'PUT', token, body: { plan_ids: planIds } })
+  },
+  seedPlans(token) {
+    return apiRequest('/api/super-admin/subscription/seed-plans', { method: 'POST', token })
+  },
+
+  /** Default plan */
+  getDefaultPlan(token) {
+    return apiRequest('/api/super-admin/subscription/default-plan', { token })
+  },
+  setDefaultPlan(token, planId) {
+    return apiRequest('/api/super-admin/subscription/default-plan', {
+      method: 'PUT',
+      token,
+      body: { plan_id: planId },
+    })
+  },
+
+  /** Top-up packages */
+  listTopupPackages(token) {
+    return apiRequest('/api/super-admin/subscription/topup-packages', { token })
+  },
+  createTopupPackage(token, body) {
+    return apiRequest('/api/super-admin/subscription/topup-packages', { method: 'POST', token, body })
+  },
+  updateTopupPackage(token, packageId, body) {
+    return apiRequest(`/api/super-admin/subscription/topup-packages/${packageId}`, { method: 'PUT', token, body })
+  },
+
+  /** Subscriptions overview */
+  listSubscriptions(token) {
+    return apiRequest('/api/super-admin/subscription/subscriptions', { token })
+  },
+  getUserSubscription(token, userId) {
+    return apiRequest(`/api/super-admin/subscription/users/${userId}`, { token })
+  },
+
+  /** Revenue */
+  revenue(token) {
+    return apiRequest('/api/super-admin/subscription/revenue', { token })
+  },
+
+  /** Payments */
+  listPayments(token, { userId, limit, offset } = {}) {
+    const params = new URLSearchParams()
+    if (userId) params.set('user_id', userId)
+    if (limit) params.set('limit', String(limit))
+    if (offset) params.set('offset', String(offset))
+    const qs = params.toString()
+    return apiRequest(`/api/super-admin/subscription/payments${qs ? `?${qs}` : ''}`, { token })
+  },
+
+  /** Public: check monetisation status */
+  monetisationStatus() {
+    return apiRequest('/api/subscription/status')
+  },
+}
+
 export const gameApi = {
   async listGames(token) {
     const payload = await apiRequest('/api/game', { token })

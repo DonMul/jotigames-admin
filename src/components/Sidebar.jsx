@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Gamepad2, Users, LogOut, Shield, Trophy, Sun, Moon } from 'lucide-react'
+import { LayoutDashboard, Gamepad2, Users, LogOut, Shield, Trophy, Sun, Moon, CreditCard } from 'lucide-react'
 import { useState } from 'react'
 import { cn, roleDisplayName } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ const navItems = [
   { to: '/dashboard/games', label: 'Games', icon: Trophy },
   { to: '/dashboard/game-modes', label: 'Game Modes', icon: Gamepad2 },
   { to: '/dashboard/users', label: 'Users', icon: Users },
+  { to: '/dashboard/subscriptions', label: 'Subscriptions', icon: CreditCard },
 ]
 
 export default function Sidebar({ session, onLogout }) {
