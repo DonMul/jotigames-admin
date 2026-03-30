@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { superAdminApi } from '@/lib/api'
+import { subscriptionApi, superAdminApi } from '@/lib/api'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import UserForm from '@/components/UserForm'
@@ -13,13 +13,34 @@ export default function UserEditPage({ session }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [user, setUser] = useState(null)
+  const [subscriptionPlanId, setSubscriptionPlanId] = useState('')
+  const [subscriptionOptions, setSubscriptionOptions] = useState([])
 
   async function loadUser() {
     setLoading(true)
     setError('')
     try {
-      const payload = await superAdminApi.getUser(session.token, userId)
-      setUser(payload?.user || null)
+      const [userRes, subscriptionRes, plansRes] = await Promise.all([
+        superAdminApi.getUser(session.token, userId),
+        subscriptionApi.getUserSubscription(session.token, userId),
+        subscriptionApi.listPlans(session.token),
+      ])
+
+      const resolvedUser = userRes?.user || null
+      const resolvedPlanId = String(subscriptionRes?.subscription?.plan_id || '')
+      const plans = Array.isArray(plansRes?.plans) ? plansRes.plans : []
+
+      setSubscriptionPlanId(resolvedPlanId)
+      setSubscriptionOptions(plans.filter((plan) => Boolean(plan?.is_active)))
+
+      if (resolvedUser) {
+        setUser({
+          ...resolvedUser,
+          subscription_plan_id: resolvedPlanId,
+        })
+      } else {
+        setUser(null)
+      }
     } catch (err) {
       setError(err.message || 'Failed to load user')
     } finally {
@@ -35,8 +56,15 @@ export default function UserEditPage({ session }) {
     setSubmitting(true)
     setError('')
     try {
-      await superAdminApi.updateUser(session.token, userId, payload)
-      navigate('/dashboard/users')
+      const { subscription_plan_id: nextPlanId, ...userPayload } = payload
+      await superAdminApi.updateUser(session.token, userId, userPayload)
+
+      const normalizedPlanId = String(nextPlanId || '')
+      if (normalizedPlanId && normalizedPlanId !== String(subscriptionPlanId || '')) {
+        await subscriptionApi.setUserSubscription(session.token, userId, normalizedPlanId)
+      }
+
+      navigate(`/dashboard/users/${userId}`)
     } catch (err) {
       setError(err.message || 'Failed to update user')
     } finally {
@@ -92,6 +120,7 @@ export default function UserEditPage({ session }) {
           allowDelete
           initialValues={user}
           session={session}
+          subscriptionOptions={subscriptionOptions}
         />
       )}
     </div>

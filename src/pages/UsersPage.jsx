@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Search, RefreshCw, Download, UserPlus, ChevronLeft, ChevronRight, X, Eye, Pencil, ChevronDown,
+  Search, RefreshCw, Download, UserPlus, ChevronLeft, ChevronRight, Eye,
 } from 'lucide-react'
 import { superAdminApi } from '@/lib/api'
 import { formatDate, normalizeText, toCsvValue, roleDisplayName } from '@/lib/utils'
@@ -12,100 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-
-function UserDetailInline({ user, token, onClose }) {
-  const [games, setGames] = useState([])
-  const [gamesLoading, setGamesLoading] = useState(true)
-
-  useEffect(() => {
-    let cancelled = false
-    async function fetchGames() {
-      setGamesLoading(true)
-      try {
-        const payload = await superAdminApi.getUserGames(token, user.id)
-        if (!cancelled) setGames(Array.isArray(payload?.games) ? payload.games : [])
-      } catch { /* ignore */ }
-      if (!cancelled) setGamesLoading(false)
-    }
-    fetchGames()
-    return () => { cancelled = true }
-  }, [user.id, token])
-
-  return (
-    <TableRow className="bg-slate-50/80 dark:bg-slate-800/50">
-      <TableCell colSpan={7} className="p-0">
-        <div className="px-6 py-5 space-y-5 animate-fade-in">
-          {/* Close Button */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">User Detail</p>
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-
-          {/* Detail Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[
-              ['ID', user.id, true],
-              ['Email', user.email],
-              ['Username', user.username],
-              ['Roles', Array.isArray(user.roles) ? user.roles.map(roleDisplayName).join(', ') : '-'],
-              ['Verified', user.is_verified ? 'Yes' : 'No'],
-              ['Created', formatDate(user.created_at)],
-              ['Updated', formatDate(user.updated_at)],
-              ['Last login', formatDate(user.last_login_at)],
-              ['Pending email', user.pending_email || '-'],
-            ].map(([label, value, mono]) => (
-              <div key={label} className="space-y-1">
-                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide">{label}</p>
-                <p className={`text-sm text-slate-700 dark:text-slate-300 ${mono ? 'font-mono text-xs' : ''}`}>
-                  {String(value || '-')}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* Owned Games */}
-          <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Owned Games</p>
-            {gamesLoading ? (
-              <Skeleton className="h-16 w-full" />
-            ) : games.length === 0 ? (
-              <p className="text-xs text-slate-400 dark:text-slate-500">No games owned by this user.</p>
-            ) : (
-              <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Name</TableHead>
-                      <TableHead className="text-xs">Type</TableHead>
-                      <TableHead className="text-xs">Start</TableHead>
-                      <TableHead className="text-xs">End</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {games.map((g, i) => (
-                      <TableRow key={String(g.id || i)}>
-                        <TableCell className="text-sm font-medium">{String(g.name || '-')}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="text-xs">
-                            {String(g.game_type || '-')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(g.start_at)}</TableCell>
-                        <TableCell className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(g.end_at)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </div>
-        </div>
-      </TableCell>
-    </TableRow>
-  )
-}
 
 export default function UsersPage({ session }) {
   const [loading, setLoading] = useState(true)
@@ -118,7 +24,6 @@ export default function UsersPage({ session }) {
   const [sortDir, setSortDir] = useState('asc')
   const [pageSize, setPageSize] = useState(25)
   const [page, setPage] = useState(1)
-  const [expandedUserId, setExpandedUserId] = useState('')
 
   async function load() {
     setLoading(true)
@@ -185,10 +90,6 @@ export default function UsersPage({ session }) {
   useEffect(() => {
     setPage(1)
   }, [query, roleFilter, verifiedFilter, sortBy, sortDir, pageSize])
-
-  function toggleExpanded(userId) {
-    setExpandedUserId((prev) => (prev === userId ? '' : userId))
-  }
 
   function exportFilteredCsv() {
     const header = ['id', 'email', 'username', 'roles', 'is_verified', 'created_at', 'updated_at', 'last_login_at']
@@ -317,10 +218,8 @@ export default function UsersPage({ session }) {
               ) : (
                 pagedUsers.map((u) => {
                   const uid = String(u.id || u.email || Math.random())
-                  const isExpanded = expandedUserId === uid
                   return (
-                    <>{/* Fragment key on wrapper */}
-                      <TableRow key={uid} className={isExpanded ? 'bg-slate-50/60 dark:bg-slate-800/40' : ''}>
+                    <TableRow key={uid}>
                         <TableCell className="font-medium">{String(u.email || '-')}</TableCell>
                         <TableCell className="text-slate-500 dark:text-slate-400">{String(u.username || '-')}</TableCell>
                         <TableCell>
@@ -343,26 +242,14 @@ export default function UsersPage({ session }) {
                         <TableCell className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(u.updated_at)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => toggleExpanded(uid)}>
-                              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
                             <Button variant="ghost" size="icon" asChild>
-                              <Link to={`/dashboard/users/${String(u?.id || '')}/edit`}>
-                                <Pencil className="h-4 w-4" />
+                              <Link to={`/dashboard/users/${String(u?.id || '')}`}>
+                                <Eye className="h-4 w-4" />
                               </Link>
                             </Button>
                           </div>
                         </TableCell>
-                      </TableRow>
-                      {isExpanded && (
-                        <UserDetailInline
-                          key={`detail-${uid}`}
-                          user={u}
-                          token={session.token}
-                          onClose={() => setExpandedUserId('')}
-                        />
-                      )}
-                    </>
+                    </TableRow>
                   )
                 })
               )}

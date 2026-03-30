@@ -6,7 +6,17 @@ const appSource = readFileSync(resolve(process.cwd(), 'src/App.jsx'), 'utf8')
 const layoutSource = readFileSync(resolve(process.cwd(), 'src/components/DashboardLayout.jsx'), 'utf8')
 
 const expectedRootRoutes = ['/login', '/dashboard/*']
-const expectedDashboardChildRoutes = ['index', 'games', 'game-modes', 'users', 'users/new', 'users/:userId/edit']
+const expectedDashboardChildRoutes = [
+  'index',
+  'games',
+  'games/:gameId',
+  'game-modes',
+  'users',
+  'users/:userId',
+  'users/new',
+  'users/:userId/edit',
+  'subscriptions',
+]
 
 describe('admin route inventory', () => {
   it('contains root routes', () => {
@@ -34,7 +44,17 @@ describe('admin route inventory', () => {
   })
 
   it('imports all page components in DashboardLayout', () => {
-    const expectedPages = ['OverviewPage', 'GamesPage', 'GameModesPage', 'UsersPage', 'UserCreatePage', 'UserEditPage']
+    const expectedPages = [
+      'OverviewPage',
+      'GamesPage',
+      'GameOverviewPage',
+      'GameModesPage',
+      'UsersPage',
+      'UserOverviewPage',
+      'UserCreatePage',
+      'UserEditPage',
+      'SubscriptionsPage',
+    ]
     for (const page of expectedPages) {
       expect(layoutSource).toContain(page)
     }

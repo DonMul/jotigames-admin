@@ -2,8 +2,10 @@ import { Routes, Route, useLocation } from 'react-router-dom'
 import Sidebar from '@/components/Sidebar'
 import OverviewPage from '@/pages/OverviewPage'
 import GamesPage from '@/pages/GamesPage'
+import GameOverviewPage from '@/pages/GameOverviewPage'
 import GameModesPage from '@/pages/GameModesPage'
 import UsersPage from '@/pages/UsersPage'
+import UserOverviewPage from '@/pages/UserOverviewPage'
 import UserCreatePage from '@/pages/UserCreatePage'
 import UserEditPage from '@/pages/UserEditPage'
 import SubscriptionsPage from '@/pages/SubscriptionsPage'
@@ -15,8 +17,14 @@ function getPageMeta(pathname) {
   if (/\/dashboard\/users\/.+\/edit$/.test(pathname)) {
     return { title: 'Edit User', description: 'Modify user account details' }
   }
+  if (/\/dashboard\/users\/.+$/.test(pathname)) {
+    return { title: 'User Overview', description: 'View full user profile, billing, and activity' }
+  }
   if (pathname.endsWith('/users')) {
     return { title: 'Users', description: 'Manage platform user accounts and permissions' }
+  }
+  if (/\/dashboard\/games\/.+$/.test(pathname)) {
+    return { title: 'Game Overview', description: 'Inspect full game details and runtime state' }
   }
   if (pathname.endsWith('/games')) {
     return { title: 'Games', description: 'Monitor and manage all games on the platform' }
@@ -52,8 +60,10 @@ export default function DashboardLayout({ session, onLogout }) {
           <Routes>
             <Route index element={<OverviewPage session={session} />} />
             <Route path="games" element={<GamesPage session={session} />} />
+            <Route path="games/:gameId" element={<GameOverviewPage session={session} />} />
             <Route path="game-modes" element={<GameModesPage session={session} />} />
             <Route path="users" element={<UsersPage session={session} />} />
+            <Route path="users/:userId" element={<UserOverviewPage session={session} />} />
             <Route path="users/new" element={<UserCreatePage session={session} />} />
             <Route path="users/:userId/edit" element={<UserEditPage session={session} />} />
             <Route path="subscriptions" element={<SubscriptionsPage session={session} />} />

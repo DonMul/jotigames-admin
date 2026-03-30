@@ -131,6 +131,13 @@ export const subscriptionApi = {
   createTopupPackage(token, body) {
     return apiRequest('/api/super-admin/subscription/topup-packages', { method: 'POST', token, body })
   },
+  reorderTopupPackages(token, packageIds) {
+    return apiRequest('/api/super-admin/subscription/topup-packages/reorder', {
+      method: 'PUT',
+      token,
+      body: { package_ids: packageIds },
+    })
+  },
   updateTopupPackage(token, packageId, body) {
     return apiRequest(`/api/super-admin/subscription/topup-packages/${packageId}`, { method: 'PUT', token, body })
   },
@@ -141,6 +148,13 @@ export const subscriptionApi = {
   },
   getUserSubscription(token, userId) {
     return apiRequest(`/api/super-admin/subscription/users/${userId}`, { token })
+  },
+  setUserSubscription(token, userId, planId) {
+    return apiRequest(`/api/super-admin/subscription/users/${userId}`, {
+      method: 'PUT',
+      token,
+      body: { plan_id: planId },
+    })
   },
 
   /** Revenue */

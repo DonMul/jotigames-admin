@@ -476,12 +476,75 @@ function PlansSection({ token }) {
 
 // ─── Top-up Packages ─────────────────────────────────────────────────────────
 
+function TopupEditRow({ pkg, onSave, onCancel, saving }) {
+  const [form, setForm] = useState({
+    name: pkg.name,
+    minutes: String(pkg.minutes),
+    price_cents: String(pkg.price_cents),
+    currency: pkg.currency,
+    stripe_price_id: pkg.stripe_price_id || '',
+    is_active: pkg.is_active,
+  })
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    const body = {}
+    if (form.name !== pkg.name) body.name = form.name
+    const nextMinutes = Number(form.minutes) || 0
+    if (nextMinutes !== pkg.minutes) body.minutes = nextMinutes
+    const nextPrice = Number(form.price_cents) || 0
+    if (nextPrice !== pkg.price_cents) body.price_cents = nextPrice
+    if (form.currency !== pkg.currency) body.currency = form.currency
+    if ((form.stripe_price_id || null) !== (pkg.stripe_price_id || null)) body.stripe_price_id = form.stripe_price_id || null
+    if (form.is_active !== pkg.is_active) body.is_active = form.is_active
+    if (Object.keys(body).length === 0) { onCancel(); return }
+    onSave(pkg.id, body)
+  }
+
+  return (
+    <TableRow className="bg-blue-50/50 dark:bg-blue-900/10">
+      <TableCell>
+        <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-7 text-xs" />
+      </TableCell>
+      <TableCell>
+        <Input type="number" min="1" value={form.minutes} onChange={e => setForm({ ...form, minutes: e.target.value })} className="h-7 text-xs w-24" />
+      </TableCell>
+      <TableCell>
+        <Input type="number" min="0" value={form.price_cents} onChange={e => setForm({ ...form, price_cents: e.target.value })} className="h-7 text-xs w-24" />
+      </TableCell>
+      <TableCell>
+        <Input value={form.stripe_price_id} onChange={e => setForm({ ...form, stripe_price_id: e.target.value })} placeholder="price_..." className="h-7 text-xs w-28 font-mono" />
+      </TableCell>
+      <TableCell>
+        <button
+          type="button"
+          onClick={() => setForm({ ...form, is_active: !form.is_active })}
+          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${form.is_active ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+        >
+          <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${form.is_active ? 'translate-x-4' : 'translate-x-0'}`} />
+        </button>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSubmit} disabled={saving}>
+            <Save className="h-3 w-3 text-emerald-600" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onCancel} disabled={saving}>
+            <X className="h-3 w-3 text-slate-400" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}
+
 function TopupPackagesSection({ token }) {
   const [packages, setPackages] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
-  const [form, setForm] = useState({ name: '', minutes: '', price_cents: '', currency: 'eur' })
+  const [form, setForm] = useState({ name: '', minutes: '', price_cents: '', currency: 'eur', stripe_price_id: '' })
   const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState(null)
 
   const fetchPackages = useCallback(async () => {
     setLoading(true)
@@ -502,12 +565,52 @@ function TopupPackagesSection({ token }) {
         ...form,
         minutes: Number(form.minutes) || 0,
         price_cents: Number(form.price_cents) || 0,
+        stripe_price_id: form.stripe_price_id || null,
       })
       setShowCreate(false)
-      setForm({ name: '', minutes: '', price_cents: '', currency: 'eur' })
+      setForm({ name: '', minutes: '', price_cents: '', currency: 'eur', stripe_price_id: '' })
       fetchPackages()
     } catch { /* ignore */ }
     setSaving(false)
+  }
+
+  async function handleUpdatePackage(packageId, body) {
+    setSaving(true)
+    try {
+      await subscriptionApi.updateTopupPackage(token, packageId, body)
+      setEditingId(null)
+      fetchPackages()
+    } catch { /* ignore */ }
+    setSaving(false)
+  }
+
+  async function handleToggleActive(pkg) {
+    setSaving(true)
+    try {
+      await subscriptionApi.updateTopupPackage(token, pkg.id, { is_active: !pkg.is_active })
+      fetchPackages()
+    } catch { /* ignore */ }
+    setSaving(false)
+  }
+
+  async function handleMoveUp(index) {
+    if (index <= 0) return
+    const ids = packages.map(p => p.id)
+    ;[ids[index - 1], ids[index]] = [ids[index], ids[index - 1]]
+    try {
+      const res = await subscriptionApi.reorderTopupPackages(token, ids)
+      setPackages(res?.packages || [])
+    } catch { /* ignore */ }
+  }
+
+  async function handleMoveDown(index) {
+    if (index >= packages.length - 1) return
+    const ids = packages.map(p => p.id)
+    ;[ids[index], ids[index + 1]] = [ids[index + 1], ids[index]]
+    try {
+      const res = await subscriptionApi.reorderTopupPackages(token, ids)
+      setPackages(res?.packages || [])
+    } catch { /* ignore */ }
   }
 
   return (
@@ -528,7 +631,7 @@ function TopupPackagesSection({ token }) {
       </CardHeader>
       <CardContent>
         {showCreate && (
-          <form onSubmit={handleCreate} className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+          <form onSubmit={handleCreate} className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
             <div>
               <Label className="text-xs">Name</Label>
               <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="500 Minutes" required />
@@ -540,6 +643,10 @@ function TopupPackagesSection({ token }) {
             <div>
               <Label className="text-xs">Price (cents)</Label>
               <Input type="number" value={form.price_cents} onChange={e => setForm({ ...form, price_cents: e.target.value })} required />
+            </div>
+            <div>
+              <Label className="text-xs">Stripe Price ID</Label>
+              <Input value={form.stripe_price_id} onChange={e => setForm({ ...form, stripe_price_id: e.target.value })} placeholder="price_..." />
             </div>
             <div className="flex items-end gap-2">
               <Button variant="ghost" size="sm" type="button" onClick={() => setShowCreate(false)}>Cancel</Button>
@@ -557,21 +664,51 @@ function TopupPackagesSection({ token }) {
                 <TableHead>Name</TableHead>
                 <TableHead>Minutes</TableHead>
                 <TableHead>Price</TableHead>
+                <TableHead>Stripe Price</TableHead>
                 <TableHead>Active</TableHead>
+                <TableHead className="w-28">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {packages.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>{p.name}</TableCell>
-                  <TableCell>{p.minutes.toLocaleString()}</TableCell>
-                  <TableCell>{formatCents(p.price_cents, p.currency)}</TableCell>
-                  <TableCell>{p.is_active ? <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Yes</Badge> : <Badge variant="outline">No</Badge>}</TableCell>
-                </TableRow>
+              {packages.map((p, idx) => (
+                editingId === p.id ? (
+                  <TopupEditRow key={p.id} pkg={p} onSave={handleUpdatePackage} onCancel={() => setEditingId(null)} saving={saving} />
+                ) : (
+                  <TableRow key={p.id} className={!p.is_active ? 'opacity-50' : ''}>
+                    <TableCell>{p.name}</TableCell>
+                    <TableCell>{p.minutes.toLocaleString()}</TableCell>
+                    <TableCell>{formatCents(p.price_cents, p.currency)}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-400 max-w-[120px] truncate">{p.stripe_price_id || '—'}</TableCell>
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActive(p)}
+                        disabled={saving}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${p.is_active ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                        title={p.is_active ? 'Click to deactivate' : 'Click to activate'}
+                      >
+                        <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${p.is_active ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingId(p.id)} title="Edit package">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleMoveUp(idx)} disabled={idx === 0} title="Move up">
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleMoveDown(idx)} disabled={idx === packages.length - 1} title="Move down">
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
               ))}
               {packages.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-slate-400 py-8">No top-up packages yet.</TableCell>
+                  <TableCell colSpan={6} className="text-center text-slate-400 py-8">No top-up packages yet.</TableCell>
                 </TableRow>
               )}
             </TableBody>

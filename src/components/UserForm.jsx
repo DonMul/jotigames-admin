@@ -16,6 +16,7 @@ export default function UserForm({
   allowDelete,
   initialValues,
   session,
+  subscriptionOptions = [],
 }) {
   const [email, setEmail] = useState(initialValues.email || '')
   const [username, setUsername] = useState(initialValues.username || '')
@@ -24,6 +25,7 @@ export default function UserForm({
   const [roleAdmin, setRoleAdmin] = useState(Boolean(initialValues.roles?.includes('ROLE_ADMIN')))
   const [roleSuperAdmin, setRoleSuperAdmin] = useState(Boolean(initialValues.roles?.includes('ROLE_SUPER_ADMIN')))
   const [isVerified, setIsVerified] = useState(Boolean(initialValues.is_verified))
+  const [subscriptionPlanId, setSubscriptionPlanId] = useState(initialValues.subscription_plan_id || '')
 
   const canManageRoles = hasSuperAdminRole(session)
 
@@ -34,6 +36,7 @@ export default function UserForm({
     setRoleAdmin(Boolean(initialValues.roles?.includes('ROLE_ADMIN')))
     setRoleSuperAdmin(Boolean(initialValues.roles?.includes('ROLE_SUPER_ADMIN')))
     setIsVerified(Boolean(initialValues.is_verified))
+    setSubscriptionPlanId(initialValues.subscription_plan_id || '')
     setPassword('')
   }, [initialValues])
 
@@ -50,6 +53,7 @@ export default function UserForm({
       ...(password.trim() ? { password } : {}),
       roles,
       is_verified: isVerified,
+      ...(mode === 'edit' ? { subscription_plan_id: subscriptionPlanId || null } : {}),
     })
   }
 
@@ -160,6 +164,25 @@ export default function UserForm({
               Verified
             </label>
           </div>
+
+          {mode === 'edit' && subscriptionOptions.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="user-subscription">Subscription</Label>
+              <select
+                id="user-subscription"
+                value={subscriptionPlanId}
+                onChange={(e) => setSubscriptionPlanId(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              >
+                <option value="">No active subscription</option>
+                {subscriptionOptions.map((plan) => (
+                  <option key={String(plan.id)} value={String(plan.id)}>
+                    {String(plan.name)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
